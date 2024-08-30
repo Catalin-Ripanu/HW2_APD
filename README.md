@@ -1,6 +1,6 @@
 # HW2_APD
 
-A Project ilustrating Java Multithreading concepts and facilities in orders management.
+A Project ilustrating Java Multithreading concepts and facilities in orders management for an online shopping app, like Emag.
 
 ## Implementation
 
