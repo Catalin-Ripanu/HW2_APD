@@ -1,54 +1,57 @@
 # HW2_APD
 
-A Project ilustrating Java Multithreading concepts and facilities in orders management for an online shopping app, like Emag.
+## Implementation Overview
 
-## Implementation
+This project demonstrates Java multithreading concepts and facilities for managing orders in an online shopping application, similar to Emag. The byte implementation variant was chosen for this assignment.
 
-The byte implementation variant was chosen for this assignment.
+### Key Components
 
-The main idea of the solution consists of creating FileChannels that allow mapping
-into memory of chunks of data from the input files. Obviously, a special HelperObject
-class was used to encompass all the properties of a thread started from main: its own
-buffer, of type MappedByteBuffer, a size and a position.
+1. **FileChannels**: Allow mapping of data chunks from input files into memory.
+2. **HelperObject class**: Encapsulates thread properties including:
+   - MappedByteBuffer
+   - Size
+   - Position
 
-For the bonus, the *setNewBuffer()* method was implemented in the main. The algorithm I designed is based on 2 critical/essential aspects: generation and correction.
+3. **setNewBuffer() method**: Implements the bonus feature for dividing work between threads.
+4. **Executor**: Uses a fixed thread pool of size nrThread (passed as a program parameter).
+5. **Main method**: Serves as the entry point and sets up the entire implementation.
 
-In the generation phase, there are cases where the chunk taken by a certain thread might contain an incomplete command, like "o_dwri3". That's why the correction phase was also designed, that "while" in the method. *setNewBuffer()* checks if the last character in the chunk is "o", if it's not, then it will eliminate the problem from that buffer.
+## Thread Logic
 
-Correction involves modifying the size at each step, consequently, at the end, the new position will be updated.
+### RunnableOrderThread Class (Level 1 Threads)
 
-Moreover, a special method, *setNewBuffer()*, was implemented, which represents the
-special part of the algorithm for dividing between threads. There is also an Executor
-that has a fixed number of threads in that pool, namely nrThread (the number passed
-as a parameter to the program). The main represents the entire setup for the whole
-implementation (i.e., an entry point).
+- Models the logic for level 1 threads.
+- In the run() method:
+  1. Each thread obtains its chunk from the command file and saves it in its buffer.
+  2. Uses synchronization to ensure thread-safety when calling setNewBuffer().
+  3. The last parent thread (highest id) starts after other threads finish processing.
+- Uses a barrier to ensure all threads start equally from a certain point.
+- Implements a latch object to limit the number of concurrent threads to P on each level.
+- Creates and manages level 2 execution threads.
 
-The *RunnableOrderThread* class models the logic of threads on level 1, in the run()
-method, in the first part, each thread invoked by main obtains its chunk from the
-command file and saves it in its own buffer. Moreover, there is also a synchronization
-element, because setNewBuffer() is not a thread-safe method, it modifies the position
-and size of that common helperObj object at each call, there would be a disastrous
-situation if that mutex wasn't put in place.
+### RunnableOrderProductThread Class (Level 2 Threads)
 
-The last parent thread, the one with the highest id, starts only after processing
-the other threads, because extracting the last chunk from the file is different.
-Obviously, a barrier is also used so that all threads start equally from that point.
-Also, a latch object is instantiated to respect the restriction that no more than P
-threads should run on a certain level, at a certain time. The final part in the case
-of this class is trivial, the way of conceiving execution threads is respected also
-in the case of children on level 2.
+- Models the logic for level 2 threads.
+- Similar reasoning to RunnableOrderThread.
+- Addresses challenges in MappedByteBuffer to String conversion using the duplicate() method.
 
-The *RunnableOrderProductThread* class models the logic of threads on level 2, this
-logic is quite similar to the previous reasoning. There were problems in making the
-MappedByteBuffer -> String conversion as it was necessary to use the duplicate()
-method from the API.
+## Bonus Implementation: setNewBuffer() Method
 
-The text parsing at the end is simple, it doesn't require additional explanations.
-Obviously, at the end of the program, in main, all started files / channels are closed.
-Some references that helped debug some errors:
+The algorithm design is based on two critical aspects:
 
-- https://stackoverflow.com/questions/43234003/bytebuffer-to-string-in-java
-- https://www.baeldung.com/java-mapped-byte-buffer
-- https://www.programcreek.com/java-api-examples/?api=java.nio.MappedByteBuffer
-- https://www.geeksforgeeks.org/what-is-memory-mapped-file-in-java/
-- https://www.happycoders.eu/java/filechannel-memory-mapped-io-locks/
+1. **Generation**: Handles cases where a thread's chunk might contain an incomplete command (e.g., "o_dwri3").
+2. **Correction**: Checks if the last character in the chunk is "o", and eliminates the problem from that buffer if it's not.
+
+The correction phase modifies the size at each step, updating the new position at the end.
+
+## File Handling and Memory Management
+
+- All started files and channels are closed at the end of the program in the main method.
+
+## References
+
+- [ByteBuffer to String in Java](https://stackoverflow.com/questions/43234003/bytebuffer-to-string-in-java)
+- [Java MappedByteBuffer Guide](https://www.baeldung.com/java-mapped-byte-buffer)
+- [Java API Examples for MappedByteBuffer](https://www.programcreek.com/java-api-examples/?api=java.nio.MappedByteBuffer)
+- [Memory-Mapped File in Java](https://www.geeksforgeeks.org/what-is-memory-mapped-file-in-java/)
+- [FileChannel, Memory-Mapped I/O, and Locks in Java](https://www.happycoders.eu/java/filechannel-memory-mapped-io-locks/)
